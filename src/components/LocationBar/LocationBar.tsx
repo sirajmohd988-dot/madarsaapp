@@ -7,9 +7,9 @@ interface LocationBarProps {
   country: string;
 }
 
-const LocationBar: React.FC<LocationBarProps> = ({ city, country }) => (
+const LocationBar: React.FC<LocationBarProps> = React.memo(({ city, country }) => (
   <div
-    className="flex items-center justify-between h-17 border-b border-gray-100 bg-gradient-to-t from-[#FFFFFF] to-[#F0EAFB]"
+    className="flex items-center justify-between h-14 border-b border-gray-100 bg-gradient-to-t from-[#FFFFFF] to-[#F0EAFB]"
     style={{ padding: "12px 16px" }} // py-3 ≈ 12px
   >
     <img src={mainLogo} alt="Main Logo" className="text-purple-700 h-9 w-21" />
@@ -23,6 +23,6 @@ const LocationBar: React.FC<LocationBarProps> = ({ city, country }) => (
       </span>
     </div>
   </div>
-);
+));
 
 export default LocationBar;

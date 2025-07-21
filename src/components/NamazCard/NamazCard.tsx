@@ -1,7 +1,7 @@
-import React, {useEffect, useState} from 'react'
+import React, { useEffect, useState } from "react";
 import { formatTo12Hour } from "../../utils/format";
 import { usePrayerTimesStore } from "../../store/prayerTimes";
-import axios from "axios";
+import apiClient from "../../utils/api";
 
 interface NamazCardProps {
   name: string;
@@ -14,21 +14,19 @@ interface NamazCardProps {
   longitude?: number | null;
 }
 
-const NamazCard: React.FC<NamazCardProps> = ({
-  name,
-  color,
-  icon,
-  active,
-  prayerIcons,
-  latitude,
-  longitude,
-}) => 
-  
-  {
+const NamazCard: React.FC<NamazCardProps> = React.memo(
+  ({ name, color, icon, active, prayerIcons, latitude, longitude }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { prayerTimes, setPrayerTimes } = usePrayerTimesStore();
     const [countdown, setCountdown] = useState("");
+    const [progress, setProgress] = useState<{ [key: string]: number }>({
+      Fajr: 0,
+      Dhuhr: 0,
+      Asr: 0,
+      Maghrib: 0,
+      Isha: 0,
+    });
 
     // Get today's date in DD-MM-YYYY
     const today = new Date();
@@ -39,20 +37,17 @@ const NamazCard: React.FC<NamazCardProps> = ({
     const dateStr = `${day}-${month}-${year}`;
 
     useEffect(() => {
-      // Fetch only if times are not available or if the date is old
-      const shouldFetch = !prayerTimes || prayerTimes.date !== dateStr;
-
-      if (latitude && longitude && shouldFetch) {
+      if (latitude && longitude) {
         setLoading(true);
         setError(null);
-        axios.get(
-          `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${latitude}&longitude=${longitude}`
-        )
+        apiClient
+          .get(
+            `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${latitude}&longitude=${longitude}&method=2`
+          )
           .then((res) => {
             const data = res.data;
             if (data.code === 200) {
-              console.log("data namazcard", data.data.timings);
-              setPrayerTimes(dateStr, data.data.timings); // persist in store
+              setPrayerTimes(dateStr, data.data.timings);
             } else {
               setError("Failed to fetch prayer times");
             }
@@ -60,139 +55,272 @@ const NamazCard: React.FC<NamazCardProps> = ({
           .catch(() => setError("Failed to fetch prayer times"))
           .finally(() => setLoading(false));
       }
-    }, [latitude, longitude, dateStr, prayerTimes, setPrayerTimes]);
+    }, [latitude, longitude, dateStr, setPrayerTimes]);
 
     useEffect(() => {
-      if (!prayerTimes?.times) return;
+      if (!prayerTimes?.times) {
+        setProgress({ Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 });
+        setCountdown("");
+        return;
+      }
 
       const prayerOrder = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
-      const calculateCountdown = () => {
+      const calculateProgress = () => {
         const now = new Date();
-        
-        const prayerDateObjects = prayerOrder.map(name => {
-          const time = prayerTimes.times[name];
-          if (!time) return null;
-          const [hour, minute] = time.split(':').map(Number);
-          const date = new Date();
-          date.setHours(hour, minute, 0, 0);
-          return { name, date };
-        }).filter((p): p is { name: string; date: Date } => p !== null);
-          
-        let nextPrayer = prayerDateObjects.find(p => p.date > now);
-        
+        const prayerDateObjects = prayerOrder
+          .map((name) => {
+            const time = prayerTimes.times[name];
+            if (!time) return null;
+            const [hour, minute] = time.split(":").map(Number);
+            const date = new Date();
+            date.setHours(hour, minute, 0, 0);
+            return { name, date };
+          })
+          .filter((p): p is { name: string; date: Date } => p !== null);
+
+        let nextPrayer = prayerDateObjects.find((p) => p.date > now);
+        let currentPrayerIndex = -1;
+
         if (!nextPrayer) {
           const fajrTime = prayerTimes.times["Fajr"];
           if (fajrTime) {
-            const [hour, minute] = fajrTime.split(':').map(Number);
+            const [hour, minute] = fajrTime.split(":").map(Number);
             const tomorrowFajr = new Date();
             tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
             tomorrowFajr.setHours(hour, minute, 0, 0);
             nextPrayer = { name: "Fajr", date: tomorrowFajr };
+            setProgress({ Fajr: 0, Dhuhr: 0, Asr: 0, Maghrib: 0, Isha: 0 });
           }
+        } else {
+          currentPrayerIndex =
+            prayerOrder.indexOf(nextPrayer.name) - 1 >= 0
+              ? prayerOrder.indexOf(nextPrayer.name) - 1
+              : prayerOrder.length - 1;
         }
-        
+
         if (nextPrayer) {
           const diff = nextPrayer.date.getTime() - now.getTime();
           const hours = Math.floor(diff / (1000 * 60 * 60));
           const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
           setCountdown(`Next prayer in ${hours}h ${minutes}m`);
+
+          const newProgress = { ...progress };
+          prayerOrder.forEach((prayer, index) => {
+            if (index < currentPrayerIndex) {
+              newProgress[prayer] = 1; // Completed prayers
+            } else if (
+              index === currentPrayerIndex &&
+              currentPrayerIndex >= 0
+            ) {
+              const currentPrayer = prayerDateObjects[currentPrayerIndex];
+              const currentPrayerTime = currentPrayer.date.getTime();
+              const nextPrayerTime = nextPrayer.date.getTime();
+              const totalDuration = nextPrayerTime - currentPrayerTime;
+              const elapsed = Math.max(0, now.getTime() - currentPrayerTime);
+              newProgress[prayer] = Math.min(elapsed / totalDuration, 1);
+            } else {
+              newProgress[prayer] = 0; // Future prayers
+            }
+          });
+          setProgress(newProgress);
         } else {
           setCountdown("");
         }
       };
 
-      calculateCountdown();
-      const interval = setInterval(calculateCountdown, 60000); 
-
+      calculateProgress();
+      const interval = setInterval(calculateProgress, 10000); // Update every 10 seconds
       return () => clearInterval(interval);
     }, [prayerTimes]);
 
-    useEffect(() => {
-      if (prayerTimes) {
-        console.log("prayer timings", prayerTimes);
-      }
-    }, [prayerTimes]);
+    const renderTime = (time: string | undefined) => {
+      if (loading) return "...";
+      if (!time) return "";
+      return formatTo12Hour(time);
+    };
 
-  const renderTime = (time: string | undefined) => {
-    if (loading) return "...";
-    if (!time) return "";
-    return formatTo12Hour(time);
-  };
-  
- return (
-   <div
-     className={`rounded-2xl  w-full min-h-[304px] flex flex-col justify-between bg-gradient-to-t ${color} ${
-       active ? "ring-4 ring-white ring-opacity-60" : ""
-     } p-4 pb-0`}
-   >
-     {/* Top Row: Icon, Name, Day */}
-     <div className="flex items-center justify-between">
-       <div className="flex items-center gap-2">
-         {icon}
-         <span className="text-white font-bold text-lg md:text-xl">{name}</span>
-       </div>
-       <span className="flex justify-center items-center bg-white/30 text-white text-xs md:text-sm w-18 h-6 rs-60 rounded-full px-3 py-1">
-         {dayName}
-       </span>
-     </div>
-     <div className="text-white text-xs mb-2">{loading ? "Calculating..." : countdown}</div>
-     {/* Error fallback */}
-     {error && (
-       <div className="text-red-300 text-xs mb-2">
-         {error || "Unable to load prayer times. Please try again later."}
-       </div>
-     )}
-     {/* Prayer Times Row */}
-     <div className="flex gap-5 relative top-10 items-center text-white text-xs self-center flex-wrap justify-center">
-       {[
-         { prayerName: "Fajr", icon: prayerIcons[0] },
-         { prayerName: "Dhuhr", icon: prayerIcons[1] },
-         { prayerName: "Asr", icon: prayerIcons[2] },
-         { prayerName: "Maghrib", icon: prayerIcons[3] },
-         { prayerName: "Isha", icon: prayerIcons[4] },
-       ].map(({ prayerName, icon }) => (
-         <div
-           key={prayerName}
-           className={`flex flex-col items-center ${
-             name === prayerName ? "opacity-100" : "opacity-80"
-           }`}
-         >
-           <span>{icon}</span>
-           <span>{prayerName}</span>
-           <span>{renderTime(prayerTimes?.times?.[prayerName])}</span>
-         </div>
-       ))}
-     </div>
-     {/* Arc placeholder */}
-     <div className="flex-1  flex items-end justify-center">
-       <div className="w-full flex justify-center items-end">
-         <svg className="w-full h-[115px]" viewBox="0 0 200 100">
-           {/* Background track */}
-           <path
-             d="M20,100 A80,80 0 0,1 180,100"
-             fill="none"
-             stroke="white"
-             strokeWidth="12"
-             strokeDasharray="28 20"
-             strokeLinecap="round"
-             opacity={0.3}
-           />
-           {/* Foreground progress (3 of 5 prayers) */}
-           <path
-             d="M20,100 A80,80 0 0,1 180,100"
-             fill="none"
-             stroke="white"
-             strokeWidth="12"
-             strokeDasharray="28 20 28 20 28 999"
-             strokeLinecap="round"
-             opacity={1}
-           />
-         </svg>
-       </div>
-     </div>
-   </div>
- );
+    const getArcStyles = (arcPrayerName: string) => {
+      const arcLength = 44.06956361285682;
+      const progressValue = progress[arcPrayerName] || 0;
+      const dashArray = `${arcLength * progressValue} ${
+        arcLength * (1 - progressValue)
+      }`;
+      return {
+        strokeOpacity: progressValue > 0 ? 1 : 0.5,
+        strokeDasharray: progressValue > 0 ? dashArray : "0 999",
+      };
+    };
+
+    return (
+      <div
+        className={`rounded-2xl w-full min-h-[304px] flex flex-col justify-between bg-gradient-to-t ${color} ${
+          active ? "ring-4 ring-white ring-opacity-60" : ""
+        } p-4 pb-0`}
+      >
+        <div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {icon}
+              <span className="text-white font-bold text-lg md:text-xl">
+                {name}
+              </span>
+            </div>
+            <span className="flex justify-center items-center bg-white/30 text-white text-xs md:text-sm w-18 h-6 rs-60 rounded-full px-3 py-1">
+              {dayName}
+            </span>
+          </div>
+          <div className="text-white text-xs mb-2">
+            {loading ? "Calculating..." : countdown}
+          </div>
+          {error && (
+            <div className="text-red-300 text-xs mb-2">
+              {error || "Unable to load prayer times. Please try again later."}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-5 relative items-center text-white text-xs self-center flex-wrap justify-center">
+          {[
+            { prayerName: "Fajr", icon: prayerIcons[0] },
+            { prayerName: "Dhuhr", icon: prayerIcons[1] },
+            { prayerName: "Asr", icon: prayerIcons[2] },
+            { prayerName: "Maghrib", icon: prayerIcons[3] },
+            { prayerName: "Isha", icon: prayerIcons[4] },
+          ].map(({ prayerName, icon }) => (
+            <div
+              key={prayerName}
+              className={`flex flex-col items-center ${
+                name === prayerName ? "opacity-100" : "opacity-80"
+              }`}
+            >
+              <span className="h-6 w-6">{icon}</span>
+              <span>{prayerName}</span>
+              <span>{renderTime(prayerTimes?.times?.[prayerName])}</span>
+            </div>
+          ))}
+        </div>
+        <div className="overflow-clip -mx-12 -mt-4 -mb-1">
+          <svg viewBox="0 0 300 100" className="bg-transparent w-full">
+            <g>
+              <path
+                d="M 36.71152662041874 97.17271728241259 A 125 125 0 0 1 61.920723754550636 61.30365793293491"
+                stroke="white"
+                stroke-opacity="0.5"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+              ></path>
+              <path
+                d="M 36.71152662041874 97.17271728241259 A 125 125 0 0 1 61.920723754550636 61.30365793293491"
+                stroke="white"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray={getArcStyles("Fajr").strokeDasharray}
+                stroke-opacity={getArcStyles("Fajr").strokeOpacity}
+                style={{
+                  transition:
+                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                }}
+              ></path>
+            </g>
+            <g>
+              <path
+                d="M 73.81830893528983 50.89727578658062 A 125 125 0 0 1 112.72400666048773 30.687384067934218"
+                stroke="white"
+                stroke-opacity="0.5"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+              ></path>
+              <path
+                d="M 73.81830893528983 50.89727578658062 A 125 125 0 0 1 112.72400666048773 30.687384067934218"
+                stroke="white"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray={getArcStyles("Dhuhr").strokeDasharray}
+                stroke-opacity={getArcStyles("Dhuhr").strokeOpacity}
+                style={{
+                  transition:
+                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                }}
+              ></path>
+            </g>
+            <g>
+              <path
+                d="M 128.07915923850152 26.937102503195433 A 125 125 0 0 1 171.92084076149843 26.93710250319542"
+                stroke="white"
+                stroke-opacity="0.5"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+              ></path>
+              <path
+                d="M 128.07915923850152 26.937102503195433 A 125 125 0 0 1 171.92084076149843 26.93710250319542"
+                stroke="white"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray={getArcStyles("Asr").strokeDasharray}
+                stroke-opacity={getArcStyles("Asr").strokeOpacity}
+                style={{
+                  transition:
+                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                }}
+              ></path>
+            </g>
+            <g>
+              <path
+                d="M 187.27599333951233 30.687384067934246 A 125 125 0 0 1 226.18169106471012 50.89727578658059"
+                stroke="white"
+                stroke-opacity="0.5"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+              ></path>
+              <path
+                d="M 187.27599333951233 30.687384067934246 A 125 125 0 0 1 226.18169106471012 50.89727578658059"
+                stroke="white"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray={getArcStyles("Maghrib").strokeDasharray}
+                stroke-opacity={getArcStyles("Maghrib").strokeOpacity}
+                style={{
+                  transition:
+                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                }}
+              ></path>
+            </g>
+            <g>
+              <path
+                d="M 238.07927624544934 61.30365793293488 A 125 125 0 0 1 263.28847337958126 97.1727172824126"
+                stroke="white"
+                stroke-opacity="0.5"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+              ></path>
+              <path
+                d="M 238.07927624544934 61.30365793293488 A 125 125 0 0 1 263.28847337958126 97.1727172824126"
+                stroke="white"
+                stroke-width="11.875"
+                fill="none"
+                stroke-linecap="round"
+                stroke-dasharray={getArcStyles("Isha").strokeDasharray}
+                stroke-opacity={getArcStyles("Isha").strokeOpacity}
+                style={{
+                  transition:
+                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                }}
+              ></path>
+            </g>
+          </svg>
+        </div>
+      </div>
+    );
   }
+);
 
-export default NamazCard 
+export default NamazCard;

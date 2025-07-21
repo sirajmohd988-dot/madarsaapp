@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import apiClient from "../utils/api";
 
 interface Location {
   city: string;
@@ -34,7 +35,7 @@ export default function useGeolocation(): Location {
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          const response = await fetch(
+          const response = await apiClient.get(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
             {
               headers: {
@@ -44,7 +45,7 @@ export default function useGeolocation(): Location {
             }
           );
 
-          const data = await response.json();
+          const data = await response.data;
           console.log("this is uselocation");
           console.log(data);
           const city =
