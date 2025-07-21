@@ -22,7 +22,11 @@ export default function useGeolocation(): Location {
   useEffect(() => {
     console.log("useGeolocation useEffect running");
     if (!navigator.geolocation) {
-      setLocation((prev) => ({ ...prev, loading: false, error: "Geolocation not supported" }));
+      setLocation((prev) => ({
+        ...prev,
+        loading: false,
+        error: "Geolocation not supported",
+      }));
       return;
     }
 
@@ -31,12 +35,23 @@ export default function useGeolocation(): Location {
         const { latitude, longitude } = position.coords;
         try {
           const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+            {
+              headers: {
+                // 'User-Agent' header removed for mobile compatibility
+                "Accept-Language": "en",
+              },
+            }
           );
+
           const data = await response.json();
           console.log("this is uselocation");
           console.log(data);
-          const city = data.address.city || data.address.town || data.address.village || "Unknown";
+          const city =
+            data.address.city ||
+            data.address.town ||
+            data.address.village ||
+            "Unknown";
           const country = data.address.country || "Unknown";
           setLocation({
             city,
@@ -50,7 +65,7 @@ export default function useGeolocation(): Location {
           setLocation((prev) => ({
             ...prev,
             loading: false,
-            error: "Failed to fetch location info",
+            error: "Failed to fetch",
             latitude,
             longitude,
           }));
@@ -58,10 +73,14 @@ export default function useGeolocation(): Location {
       },
       (error) => {
         console.log("Geolocation error:", error);
-        setLocation((prev) => ({ ...prev, loading: false, error: error.message }));
+        setLocation((prev) => ({
+          ...prev,
+          loading: false,
+          error: error.message,
+        }));
       }
     );
   }, []);
 
   return location;
-} 
+}

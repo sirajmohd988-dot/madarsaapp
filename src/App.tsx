@@ -63,14 +63,14 @@ function App() {
       color: "from-[#811DEC] to-[#381079]",
       icon: <MoonStars size={24} className="text-white" />,
       time: "7:04",
-      active: true,
+      active: false, // <-- set to false
     },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-red-500 border-4 border-yellow-400">
+    <div className="min-h-screen flex flex-col">
       {/* Sticky Top Location Bar */}
-      <div className="sticky top-0 z-20 bg-white shadow-sm m-5 border-green-500">
+      <div className="sticky top-0 z-20  m-5 border-green-500">
         <LocationBar
           city={loading ? "Locating..." : error ? "Unknown" : city}
           country={loading ? "" : error ? error : country}
@@ -78,7 +78,7 @@ function App() {
       </div>
 
       {/* Main Cards Section */}
-      <div className="p-6">
+      <div className="p-6 m_b">
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
           {prayers.map((p) => (
             <NamazCard
@@ -93,7 +93,10 @@ function App() {
       </div>
 
       {/* Bottom Nav for Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t md:hidden">
+      <div
+        className="fixed bottom-0 left-0 right-0 z-30 bg-white md:hidden"
+        style={{ boxShadow: "0px -5px 20px 0px #00000008" }}
+      >
         <nav className="flex justify-around items-center h-16">
           <div className="flex flex-col items-center text-xs text-purple-700">
             <HouseSimple className="w-[22px] h-[22px] mb-1" />
