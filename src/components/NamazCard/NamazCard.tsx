@@ -144,32 +144,25 @@ const NamazCard: React.FC<NamazCardProps> = ({
        </div>
      )}
      {/* Prayer Times Row */}
-     <div className="flex gap-5 relative top-10 items-center text-white text-xs opacity-80 self-center flex-wrap">
-       <div className="flex flex-col items-center">
-         <span>{prayerIcons[0]}</span>
-         <span>Fajr</span>
-         <span>{renderTime(prayerTimes?.times?.Fajr)}</span>
-       </div>
-       <div className="flex flex-col items-center">
-         <span>{prayerIcons[1]}</span>
-         <span>Dhuhr</span>
-         <span>{renderTime(prayerTimes?.times?.Dhuhr)}</span>
-       </div>
-       <div className="flex flex-col items-center">
-         <span>{prayerIcons[2]}</span>
-         <span>Asr</span>
-         <span>{renderTime(prayerTimes?.times?.Asr)}</span>
-       </div>
-       <div className="flex flex-col items-center">
-         <span>{prayerIcons[3]}</span>
-         <span>Maghrib</span>
-         <span>{renderTime(prayerTimes?.times?.Maghrib)}</span>
-       </div>
-       <div className="flex flex-col items-center">
-         <span>{prayerIcons[4]}</span>
-         <span>Isha</span>
-         <span>{renderTime(prayerTimes?.times?.Isha)}</span>
-       </div>
+     <div className="flex gap-5 relative top-10 items-center text-white text-xs self-center flex-wrap justify-center">
+       {[
+         { prayerName: "Fajr", icon: prayerIcons[0] },
+         { prayerName: "Dhuhr", icon: prayerIcons[1] },
+         { prayerName: "Asr", icon: prayerIcons[2] },
+         { prayerName: "Maghrib", icon: prayerIcons[3] },
+         { prayerName: "Isha", icon: prayerIcons[4] },
+       ].map(({ prayerName, icon }) => (
+         <div
+           key={prayerName}
+           className={`flex flex-col items-center ${
+             name === prayerName ? "opacity-100" : "opacity-80"
+           }`}
+         >
+           <span>{icon}</span>
+           <span>{prayerName}</span>
+           <span>{renderTime(prayerTimes?.times?.[prayerName])}</span>
+         </div>
+       ))}
      </div>
      {/* Arc placeholder */}
      <div className="flex-1  flex items-end justify-center">

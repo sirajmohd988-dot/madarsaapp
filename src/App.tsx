@@ -16,6 +16,8 @@ import {
 } from "phosphor-react";
 
 import useGeolocation from "./hooks/useGeolocation";
+import { usePrayerTimesStore } from "./store/prayerTimes";
+import { useEffect, useState } from "react";
 
 
 // Icons (optional array, not used directly but passed to cards if needed)
@@ -29,6 +31,9 @@ const prayerIcons = [
 
 function App() {
   const { city, country, latitude, longitude, loading, error } = useGeolocation();
+  const { prayerTimes } = usePrayerTimesStore();
+  const [nextPrayerName, setNextPrayerName] = useState<string | null>(null);
+  
   const prayers = [
     {
       name: "Fajr",
@@ -67,6 +72,53 @@ function App() {
     },
   ];
 
+  useEffect(() => {
+    if (!prayerTimes?.times) {
+      setNextPrayerName(null);
+      return;
+    }
+
+    const prayerOrder = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+    const findNextPrayer = () => {
+      const now = new Date();
+      
+      const prayerDateObjects = prayerOrder.map(name => {
+        const time = prayerTimes.times[name];
+        if (!time) return null;
+        const [hour, minute] = time.split(':').map(Number);
+        const date = new Date();
+        date.setHours(hour, minute, 0, 0);
+        return { name, date };
+      }).filter((p): p is { name: string; date: Date } => p !== null);
+        
+      let nextPrayer = prayerDateObjects.find(p => p.date > now);
+      
+      if (!nextPrayer) { // After Isha, next prayer is Fajr tomorrow
+        const fajrTime = prayerTimes.times["Fajr"];
+        if (fajrTime) {
+          const [hour, minute] = fajrTime.split(':').map(Number);
+          const tomorrowFajr = new Date();
+          tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
+          tomorrowFajr.setHours(hour, minute, 0, 0);
+          nextPrayer = { name: "Fajr", date: tomorrowFajr };
+        }
+      }
+
+      if (nextPrayer) {
+        setNextPrayerName(nextPrayer.name);
+      }
+    };
+
+    findNextPrayer();
+    const interval = setInterval(findNextPrayer, 60000); 
+
+    return () => clearInterval(interval);
+  }, [prayerTimes]);
+  
+  const nextPrayerData = prayers.find(p => p.name === nextPrayerName);
+  console.log("nextprayer", nextPrayerData);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Sticky Top Location Bar */}
@@ -80,15 +132,28 @@ function App() {
       {/* Main Cards Section */}
       <div className="p-6 m_b">
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
-          {prayers.map((p) => (
+          {nextPrayerData ? (
             <NamazCard
-              key={p.name}
-              {...p}
+              key={nextPrayerData.name}
+              {...nextPrayerData}
               prayerIcons={prayerIcons}
               latitude={latitude}
               longitude={longitude}
             />
-          ))}
+          ) : (
+            // Fallback card while times are loading
+            <NamazCard
+              key="loading-card"
+              name="Prayer"
+              color="from-gray-500 to-gray-700"
+              icon={<CloudMoon size={24} className="text-white" />}
+              time=""
+              active={false}
+              prayerIcons={prayerIcons}
+              latitude={latitude}
+              longitude={longitude}
+            />
+          )}
         </div>
       </div>
 
