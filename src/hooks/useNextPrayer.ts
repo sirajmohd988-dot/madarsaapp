@@ -3,19 +3,18 @@ import { usePrayerTimesStore } from '../store/prayerTimes';
 
 export function useNextPrayer() {
   const { prayerTimes } = usePrayerTimesStore();
-  const [nextPrayerName, setNextPrayerName] = useState<string | null>(null);
+  const [currentPrayerName, setCurrentPrayerName] = useState<string | null>(null);
 
   useEffect(() => {
     if (!prayerTimes?.times) {
-      setNextPrayerName(null);
+      setCurrentPrayerName(null);
       return;
     }
 
     const prayerOrder = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
 
-    const findNextPrayer = () => {
+    const findCurrentPrayer = () => {
       const now = new Date();
-      
       const prayerDateObjects = prayerOrder.map(name => {
         const time = prayerTimes.times[name];
         if (!time) return null;
@@ -24,30 +23,26 @@ export function useNextPrayer() {
         date.setHours(hour, minute, 0, 0);
         return { name, date };
       }).filter((p): p is { name: string; date: Date } => p !== null);
-        
-      let nextPrayer = prayerDateObjects.find(p => p.date > now);
-      
-      if (!nextPrayer) { // After Isha, next prayer is Fajr tomorrow
-        const fajrTime = prayerTimes.times["Fajr"];
-        if (fajrTime) {
-          const [hour, minute] = fajrTime.split(':').map(Number);
-          const tomorrowFajr = new Date();
-          tomorrowFajr.setDate(tomorrowFajr.getDate() + 1);
-          tomorrowFajr.setHours(hour, minute, 0, 0);
-          nextPrayer = { name: "Fajr", date: tomorrowFajr };
+
+      // Find the current prayer: the last prayer whose time is <= now
+      let currentPrayer = null;
+      for (let i = prayerDateObjects.length - 1; i >= 0; i--) {
+        if (now >= prayerDateObjects[i].date) {
+          currentPrayer = prayerDateObjects[i];
+          break;
         }
       }
-
-      if (nextPrayer) {
-        setNextPrayerName(nextPrayer.name);
+      // If before Fajr, highlight Isha (last prayer of previous day)
+      if (!currentPrayer && prayerDateObjects.length > 0) {
+        currentPrayer = prayerDateObjects[prayerDateObjects.length - 1];
       }
+      setCurrentPrayerName(currentPrayer ? currentPrayer.name : null);
     };
 
-    findNextPrayer();
-    const interval = setInterval(findNextPrayer, 60000); 
-
+    findCurrentPrayer();
+    const interval = setInterval(findCurrentPrayer, 60000);
     return () => clearInterval(interval);
   }, [prayerTimes]);
 
-  return nextPrayerName;
+  return currentPrayerName;
 } 

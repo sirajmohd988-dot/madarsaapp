@@ -13,6 +13,7 @@ interface NamazCardProps {
   latitude?: number | null;
   longitude?: number | null;
 }
+console.log("name", name);
 
 const NamazCard: React.FC<NamazCardProps> = React.memo(
   ({ name, color, icon, active, prayerIcons, latitude, longitude }) => {
@@ -140,17 +141,26 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
       return formatTo12Hour(time);
     };
 
-    const getArcStyles = (arcPrayerName: string) => {
-      const arcLength = 44.06956361285682;
-      const progressValue = progress[arcPrayerName] || 0;
-      const dashArray = `${arcLength * progressValue} ${
-        arcLength * (1 - progressValue)
-      }`;
-      return {
-        strokeOpacity: progressValue > 0 ? 1 : 0.5,
-        strokeDasharray: progressValue > 0 ? dashArray : "0 999",
-      };
-    };
+   const getArcStyles = (arcPrayerName: string) => {
+     const arcLength = 44.06956361285682;
+     const progressValue = progress[arcPrayerName] || 0;
+
+     if (progressValue <= 0) {
+       return {
+         strokeOpacity: 0, // Make invisible to hide round cap
+         strokeDasharray: "0 999", // Effectively no arc
+       };
+     }
+
+     const dashArray = `${arcLength * progressValue} ${
+       arcLength * (1 - progressValue)
+     }`;
+     return {
+       strokeOpacity: 1, // Fully visible
+       strokeDasharray: dashArray,
+     };
+   };
+
 
     return (
       <div
@@ -190,7 +200,7 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
             <div
               key={prayerName}
               className={`flex flex-col items-center ${
-                name === prayerName ? "opacity-100" : "opacity-80"
+                name === prayerName ? "opacity-120" : "opacity-80"
               }`}
             >
               <span className="h-6 w-6">{icon}</span>
@@ -205,22 +215,22 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
               <path
                 d="M 36.71152662041874 97.17271728241259 A 125 125 0 0 1 61.920723754550636 61.30365793293491"
                 stroke="white"
-                stroke-opacity="0.5"
-                stroke-width="11.875"
+                strokeOpacity="0.5"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
+                strokeLinecap="round"
               ></path>
               <path
                 d="M 36.71152662041874 97.17271728241259 A 125 125 0 0 1 61.920723754550636 61.30365793293491"
                 stroke="white"
-                stroke-width="11.875"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
-                stroke-dasharray={getArcStyles("Fajr").strokeDasharray}
-                stroke-opacity={getArcStyles("Fajr").strokeOpacity}
+                strokeLinecap="round"
+                strokeDasharray={getArcStyles("Fajr").strokeDasharray}
+                strokeOpacity={getArcStyles("Fajr").strokeOpacity}
                 style={{
                   transition:
-                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                    "strokeDasharray 0.5s ease, strokeOpacity 0.5s ease",
                 }}
               ></path>
             </g>
@@ -228,22 +238,22 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
               <path
                 d="M 73.81830893528983 50.89727578658062 A 125 125 0 0 1 112.72400666048773 30.687384067934218"
                 stroke="white"
-                stroke-opacity="0.5"
-                stroke-width="11.875"
+                strokeOpacity="0.5"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
+                strokeLinecap="round"
               ></path>
               <path
                 d="M 73.81830893528983 50.89727578658062 A 125 125 0 0 1 112.72400666048773 30.687384067934218"
                 stroke="white"
-                stroke-width="11.875"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
-                stroke-dasharray={getArcStyles("Dhuhr").strokeDasharray}
-                stroke-opacity={getArcStyles("Dhuhr").strokeOpacity}
+                strokeLinecap="round"
+                strokeDasharray={getArcStyles("Dhuhr").strokeDasharray}
+                strokeOpacity={getArcStyles("Dhuhr").strokeOpacity}
                 style={{
                   transition:
-                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                    "strokeDasharray 0.5s ease, strokeOpacity 0.5s ease",
                 }}
               ></path>
             </g>
@@ -251,22 +261,22 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
               <path
                 d="M 128.07915923850152 26.937102503195433 A 125 125 0 0 1 171.92084076149843 26.93710250319542"
                 stroke="white"
-                stroke-opacity="0.5"
-                stroke-width="11.875"
+                strokeOpacity="0.5"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
+                strokeLinecap="round"
               ></path>
               <path
                 d="M 128.07915923850152 26.937102503195433 A 125 125 0 0 1 171.92084076149843 26.93710250319542"
                 stroke="white"
-                stroke-width="11.875"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
-                stroke-dasharray={getArcStyles("Asr").strokeDasharray}
-                stroke-opacity={getArcStyles("Asr").strokeOpacity}
+                strokeLinecap="round"
+                strokeDasharray={getArcStyles("Asr").strokeDasharray}
+                strokeOpacity={getArcStyles("Asr").strokeOpacity}
                 style={{
                   transition:
-                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                    "strokeDasharray 0.5s ease, strokeOpacity 0.5s ease",
                 }}
               ></path>
             </g>
@@ -274,22 +284,22 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
               <path
                 d="M 187.27599333951233 30.687384067934246 A 125 125 0 0 1 226.18169106471012 50.89727578658059"
                 stroke="white"
-                stroke-opacity="0.5"
-                stroke-width="11.875"
+                strokeOpacity="0.5"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
+                strokeLinecap="round"
               ></path>
               <path
                 d="M 187.27599333951233 30.687384067934246 A 125 125 0 0 1 226.18169106471012 50.89727578658059"
                 stroke="white"
-                stroke-width="11.875"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
-                stroke-dasharray={getArcStyles("Maghrib").strokeDasharray}
-                stroke-opacity={getArcStyles("Maghrib").strokeOpacity}
+                strokeLinecap="round"
+                strokeDasharray={getArcStyles("Maghrib").strokeDasharray}
+                strokeOpacity={getArcStyles("Maghrib").strokeOpacity}
                 style={{
                   transition:
-                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                    "strokeDasharray 0.5s ease, strokeOpacity 0.5s ease",
                 }}
               ></path>
             </g>
@@ -297,22 +307,22 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
               <path
                 d="M 238.07927624544934 61.30365793293488 A 125 125 0 0 1 263.28847337958126 97.1727172824126"
                 stroke="white"
-                stroke-opacity="0.5"
-                stroke-width="11.875"
+                strokeOpacity="0.5"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
+                strokeLinecap="round"
               ></path>
               <path
                 d="M 238.07927624544934 61.30365793293488 A 125 125 0 0 1 263.28847337958126 97.1727172824126"
                 stroke="white"
-                stroke-width="11.875"
+                strokeWidth="11.875"
                 fill="none"
-                stroke-linecap="round"
-                stroke-dasharray={getArcStyles("Isha").strokeDasharray}
-                stroke-opacity={getArcStyles("Isha").strokeOpacity}
+                // strokeLinecap="round"
+                strokeDasharray={getArcStyles("Isha").strokeDasharray}
+                strokeOpacity={getArcStyles("Isha").strokeOpacity}
                 style={{
                   transition:
-                    "stroke-dasharray 0.5s ease, stroke-opacity 0.5s ease",
+                    "strokeDasharray 0.5s ease, strokeOpacity 0.5s ease",
                 }}
               ></path>
             </g>

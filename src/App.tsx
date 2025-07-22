@@ -36,6 +36,7 @@ function App() {
     {
       name: "Fajr",
       color: "from-[#D6BDFF] to-[#3F7CE6]",
+      // color: "from-[#811DEC] to-[#381079]",
       icon: <CloudMoon size={24} className="text-white" />,
       time: prayerTimes?.times?.Fajr
         ? formatTo12Hour(prayerTimes.times.Fajr)
@@ -44,6 +45,7 @@ function App() {
     },
     {
       name: "Dhuhr",
+      // color: "from-[#D6BDFF] to-[#3F7CE6]",
       color: "from-[#FFE392] to-[#E77715]",
       icon: <Sun size={24} className="text-white" />,
       time: prayerTimes?.times?.Dhuhr
@@ -54,6 +56,7 @@ function App() {
     {
       name: "Asr",
       color: "from-[#C9F3B3] to-[#006C5E]",
+      // color: "from-[#FFE392] to-[#E77715]",
       icon: <CloudSun size={24} className="text-white" />,
       time: prayerTimes?.times?.Asr
         ? formatTo12Hour(prayerTimes.times.Asr)
@@ -63,6 +66,7 @@ function App() {
     {
       name: "Maghrib",
       color: "from-[#FF88A8] to-[#FF9452]",
+      // color: "from-[#C9F3B3] to-[#006C5E]",
       icon: <SunHorizon size={24} className="text-white" />,
       time: prayerTimes?.times?.Maghrib
         ? formatTo12Hour(prayerTimes.times.Maghrib)
@@ -71,6 +75,7 @@ function App() {
     },
     {
       name: "Isha",
+      // color: "from-[#FF88A8] to-[#FF9452]",
       color: "from-[#811DEC] to-[#381079]",
       icon: <MoonStars size={24} className="text-white" />,
       time: prayerTimes?.times?.Isha
