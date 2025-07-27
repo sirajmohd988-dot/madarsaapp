@@ -189,7 +189,7 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
             </div>
           )}
         </div>
-        <div className="flex gap-5 relative items-center text-white text-xs self-center flex-wrap justify-center">
+        <div className="flex gap-5 relative items-center text-white text-xs self-center justify-center">
           {[
             { prayerName: "Fajr", icon: prayerIcons[0] },
             { prayerName: "Dhuhr", icon: prayerIcons[1] },
@@ -205,7 +205,8 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
             >
               <span className="h-6 w-6">{icon}</span>
               <span>{prayerName}</span>
-              <span>{renderTime(prayerTimes?.times?.[prayerName])}</span>
+              {/* className="whitespace-nowrap" */}
+              <span className="text-center">{renderTime(prayerTimes?.times?.[prayerName])}</span>
             </div>
           ))}
         </div>
@@ -213,7 +214,7 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
           <svg
             viewBox="0 0 300 100"
             className="bg-transparent w-full"
-            style={{ width: "125%", position: "relative", right: "40px" }}
+            style={{ width: "125%", position: "relative", right: "38px" }}
           >
             <g>
               <path
