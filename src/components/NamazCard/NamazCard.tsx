@@ -164,7 +164,7 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
 
     return (
       <div
-        className={`rounded-2xl w-full min-h-[304px] flex flex-col justify-between bg-gradient-to-t ${color} ${
+        className={`rounded-2xl w-full sm:w-[350px] min-h-[304px] flex flex-col justify-between bg-gradient-to-t ${color} ${
           active ? "ring-4 ring-white ring-opacity-60" : ""
         } p-4 pb-0`}
       >
@@ -200,7 +200,7 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
             <div
               key={prayerName}
               className={`flex flex-col items-center ${
-                name === prayerName ? "opacity-120" : "opacity-80"
+                name === prayerName ? "opacity-120 font-bold" : "opacity-80 font-medium"
               }`}
             >
               <span className="h-6 w-6">{icon}</span>
@@ -209,8 +209,12 @@ const NamazCard: React.FC<NamazCardProps> = React.memo(
             </div>
           ))}
         </div>
-        <div className="overflow-clip -mx-12 -mt-4 -mb-1">
-          <svg viewBox="0 0 300 100" className="bg-transparent w-full">
+        <div className="overflow-clip -mt-4 -mb-1">
+          <svg
+            viewBox="0 0 300 100"
+            className="bg-transparent w-full"
+            style={{ width: "125%", position: "relative", right: "40px" }}
+          >
             <g>
               <path
                 d="M 36.71152662041874 97.17271728241259 A 125 125 0 0 1 61.920723754550636 61.30365793293491"
